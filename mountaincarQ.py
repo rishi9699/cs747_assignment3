@@ -32,7 +32,7 @@ class Tilecoder:
         for i in range(self.numTilings):
             tileIndices[i] = (i * (self.tilesPerTiling**self.dim) + sum(matrix[i,:])) 
         return tileIndices
-
+    
     def oneHotVector(self, features, action):
         oneHot = np.zeros(self.n)
         for i in features:

@@ -29,15 +29,16 @@ class sarsaAgent():
 
     def __init__(self):
         self.env = gym.make('MountainCar-v0')
-        self.epsilon_T1 = 0.01
-        self.epsilon_T2 = 0.05
-        
-        self.numTilings = 20
-        
+        self.epsilon_T1 = 0.00
+        self.epsilon_T2 = 0.005
+        self.numTilings = 8
+        self.tileside_T1 = 20
         self.learning_rate_T1 = 0.32
         self.learning_rate_T2 = (0.1/ self.numTilings)*3.2
-        self.weights_T1 = np.random.uniform(-0.001, 0, size=(21*21,3))
-        self.weights_T2 = np.random.uniform(-0.001, 0, size=(self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
+        #self.weights_T1 = np.random.uniform(-0.001, 0, size=((self.tileside_T1 + 1)**2,3))
+        #self.weights_T2 = np.random.uniform(-0.001, 0, size=(self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
+        self.weights_T1 = np.zeros(((self.tileside_T1 + 1)**2,3))
+        self.weights_T2 = np.zeros((self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
         self.discount = 1.0
         self.train_num_episodes = 10000
         self.test_num_episodes = 100
@@ -52,21 +53,17 @@ class sarsaAgent():
     '''
 
     def get_table_features(self, obs):
-        # if math.floor((obs[1]+0.07)/0.0175)==8:
-        #     vel = 7
-        # else:
-        #     vel = math.floor((obs[1]+0.07)/0.0175)
+        obs_normed = np.array([0., 0.])
+        obs_normed[0] = (obs[0] - self.lower_bounds[0])/(self.upper_bounds[0]-self.lower_bounds[0])
+        obs_normed[1] = (obs[1] - self.lower_bounds[1])/(self.upper_bounds[1]-self.lower_bounds[1])
         
-        # return (8*math.floor((obs[0]+1.2)/0.225) + vel)
-        # print(obs)
-        tileSize = 1/self.numTilings
-        values = np.zeros(2)
-        for i in range(2):
-            values[i] = ((obs[i] - self.lower_bounds[i])/(self.upper_bounds[i]-self.lower_bounds[i]))        
-        matrix = [0, 0]
-        matrix[0] = int(values[0] / tileSize)
-        matrix[1] = (self.numTilings+1)*int(values[1] / tileSize)
-        return [sum(matrix)]
+        positions = [0, 0]
+        positions[0] = int(obs_normed[0] * self.tileside_T1)
+        positions[1] = (self.tileside_T1+1)*int(obs_normed[1] * self.tileside_T1)
+        
+        return [sum(positions)]
+        
+    
     '''
     - get_better_features: Graded
     - Use this function to solve the Task-2
@@ -74,15 +71,18 @@ class sarsaAgent():
     '''
 
     def get_better_features(self, obs):
-        values = np.zeros(2)
-        for i in range(2):
-            values[i] = ((obs[i] - self.lower_bounds[i])/(self.upper_bounds[i]-self.lower_bounds[i]))        
-        matrix = np.zeros([self.numTilings, 2])
+        obs_normed = np.array([0., 0.])
+        obs_normed[0] = (obs[0] - self.lower_bounds[0])/(self.upper_bounds[0]-self.lower_bounds[0])
+        obs_normed[1] = (obs[1] - self.lower_bounds[1])/(self.upper_bounds[1]-self.lower_bounds[1])
+        
+        positions = np.zeros([self.numTilings, 2])
         better_features = [0]*self.numTilings
+        
         for i in range(self.numTilings):
-            for i2 in range(2):
-                matrix[i,i2] = int(values[i2]*self.numTilings + i/self.numTilings)
-            better_features[i] = i*((self.numTilings+1)**2) + matrix[i,1]*(self.numTilings+1) + matrix[i,0]
+            positions[i,0] = int(obs_normed[0]*self.numTilings + i/self.numTilings)
+            positions[i,1] = int(obs_normed[1]*self.numTilings + i/self.numTilings)
+            better_features[i] = int(i*((self.numTilings+1)**2) + positions[i,1]*(self.numTilings+1) + positions[i,0])
+        
         return better_features
 
     '''
@@ -97,13 +97,11 @@ class sarsaAgent():
         if np.random.binomial(1,epsilon)==1:
             return np.random.choice(3)
         else:
-        #     #print(state)
-        #     #print(weights[state])
             Q = np.array([0.,0.,0.])
             for f in state:
                 Q += weights[f]
+            
             return np.argmax(Q)
-        # return np.argmax(weights[state])
 
     '''
     - sarsa_update: Graded.
@@ -114,18 +112,19 @@ class sarsaAgent():
     '''
 
     def sarsa_update(self, state, action, reward, new_state, new_action, learning_rate, weights):
+        
         Qsa = 0
         for f in state:
             Qsa += weights[f, action]
+        
         Qsa_p = 0
         for f in new_state:
             Qsa_p += weights[f, new_action]
             
         for f in state:
             weights[f, action] += learning_rate*(reward+Qsa_p-Qsa)
+        
         return weights
-        # weights[state, action] += learning_rate*(reward+weights[new_state,new_action]-weights[state, action])
-        # return weights
 
     '''
     - train: Ungraded.
