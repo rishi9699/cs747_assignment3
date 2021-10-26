@@ -30,16 +30,20 @@ class sarsaAgent():
     def __init__(self):
         self.env = gym.make('MountainCar-v0')
         self.epsilon_T1 = 0.05
-        self.epsilon_T2 = None
+        self.epsilon_T2 = 0.05
+        
+        self.numTilings = 8
+        
         self.learning_rate_T1 = 0.32
-        self.learning_rate_T2 = None
-        self.weights_T1 = np.random.uniform(-0.001, 0, size=(441,3))
-        self.weights_T2 = None
+        self.learning_rate_T2 = (0.1/ self.numTilings)*3.2
+        self.weights_T1 = np.random.uniform(-0.001, 0, size=(21*21,3))
+        self.weights_T2 = np.random.uniform(-0.001, 0, size=(self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
         self.discount = 1.0
         self.train_num_episodes = 10000
         self.test_num_episodes = 100
         self.upper_bounds = [self.env.observation_space.high[0], self.env.observation_space.high[1]]
         self.lower_bounds = [self.env.observation_space.low[0], self.env.observation_space.low[1]]
+        
 
     '''
     - get_table_features: Graded
@@ -55,19 +59,13 @@ class sarsaAgent():
         
         # return (8*math.floor((obs[0]+1.2)/0.225) + vel)
         # print(obs)
-        tileSize = 1/(21-1)
+        tileSize = 1/self.numTilings
         values = np.zeros(2)
-        lower_bounds=[-1.2,-0.07]
-        upper_bounds=[0.6,0.07]
         for i in range(2):
-            values[i] = ((obs[i] - lower_bounds[i])/(upper_bounds[i]-lower_bounds[i]))
-        # print(values)
-        
+            values[i] = ((obs[i] - self.lower_bounds[i])/(self.upper_bounds[i]-self.lower_bounds[i]))        
         matrix = [0, 0]
-        
         matrix[0] = int(values[0] / tileSize)
-        matrix[1] = 21*int(values[1] / tileSize)
-        # print(matrix)
+        matrix[1] = (self.numTilings+1)*int(values[1] / tileSize)
         return sum(matrix)
     '''
     - get_better_features: Graded
@@ -76,7 +74,16 @@ class sarsaAgent():
     '''
 
     def get_better_features(self, obs):
-        return None
+        values = np.zeros(2)
+        for i in range(2):
+            values[i] = ((obs[i] - self.lower_bounds[i])/(self.upper_bounds[i]-self.lower_bounds[i]))        
+        matrix = np.zeros([self.numTilings, 2])
+        better_features = [0]*self.numTilings
+        for i in range(self.numTilings):
+            for i2 in range(2):
+                matrix[i,i2] = int(values[i2]*self.numTilings + i/self.numTilings)
+            better_features[i] = i*((self.numTilings+1)**2) + matrix[i,1]*(self.numTilings+1) + matrix[i,0]
+        return better_features
 
     '''
     - choose_action: Graded.
