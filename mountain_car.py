@@ -29,11 +29,11 @@ class sarsaAgent():
 
     def __init__(self):
         self.env = gym.make('MountainCar-v0')
-        self.epsilon_T1 = 0.01
+        self.epsilon_T1 = 0.05
         self.epsilon_T2 = None
-        self.learning_rate_T1 = 0.5
+        self.learning_rate_T1 = 0.32
         self.learning_rate_T2 = None
-        self.weights_T1 = np.zeros((72,3))
+        self.weights_T1 = np.random.uniform(-0.001, 0, size=(441,3))
         self.weights_T2 = None
         self.discount = 1.0
         self.train_num_episodes = 10000
@@ -48,14 +48,27 @@ class sarsaAgent():
     '''
 
     def get_table_features(self, obs):
-        if math.floor((obs[1]+0.07)/0.0175)==8:
-            vel = 7
-        else:
-            vel = math.floor((obs[1]+0.07)/0.0175)
+        # if math.floor((obs[1]+0.07)/0.0175)==8:
+        #     vel = 7
+        # else:
+        #     vel = math.floor((obs[1]+0.07)/0.0175)
         
-        return (8*math.floor((obs[0]+1.2)/0.225) + vel)
+        # return (8*math.floor((obs[0]+1.2)/0.225) + vel)
+        # print(obs)
+        tileSize = 1/(21-1)
+        values = np.zeros(2)
+        lower_bounds=[-1.2,-0.07]
+        upper_bounds=[0.6,0.07]
+        for i in range(2):
+            values[i] = ((obs[i] - lower_bounds[i])/(upper_bounds[i]-lower_bounds[i]))
+        # print(values)
         
-
+        matrix = [0, 0]
+        
+        matrix[0] = int(values[0] / tileSize)
+        matrix[1] = 21*int(values[1] / tileSize)
+        # print(matrix)
+        return sum(matrix)
     '''
     - get_better_features: Graded
     - Use this function to solve the Task-2
@@ -74,12 +87,12 @@ class sarsaAgent():
 
     def choose_action(self, state, weights, epsilon):
         
-        if np.random.binomial(1,epsilon)==1:
-            return np.random.choice(3)
-        else:
-            #print(state)
-            #print(weights[state])
-            return np.argmax(weights[state])
+        # if np.random.binomial(1,epsilon)==1:
+        #     return np.random.choice(3)
+        # else:
+        #     #print(state)
+        #     #print(weights[state])
+        return np.argmax(weights[state])
 
     '''
     - sarsa_update: Graded.
