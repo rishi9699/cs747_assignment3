@@ -29,10 +29,10 @@ class sarsaAgent():
 
     def __init__(self):
         self.env = gym.make('MountainCar-v0')
-        self.epsilon_T1 = 0.05
+        self.epsilon_T1 = 0.01
         self.epsilon_T2 = 0.05
         
-        self.numTilings = 8
+        self.numTilings = 20
         
         self.learning_rate_T1 = 0.32
         self.learning_rate_T2 = (0.1/ self.numTilings)*3.2
@@ -66,7 +66,7 @@ class sarsaAgent():
         matrix = [0, 0]
         matrix[0] = int(values[0] / tileSize)
         matrix[1] = (self.numTilings+1)*int(values[1] / tileSize)
-        return sum(matrix)
+        return [sum(matrix)]
     '''
     - get_better_features: Graded
     - Use this function to solve the Task-2
@@ -94,12 +94,16 @@ class sarsaAgent():
 
     def choose_action(self, state, weights, epsilon):
         
-        # if np.random.binomial(1,epsilon)==1:
-        #     return np.random.choice(3)
-        # else:
+        if np.random.binomial(1,epsilon)==1:
+            return np.random.choice(3)
+        else:
         #     #print(state)
         #     #print(weights[state])
-        return np.argmax(weights[state])
+            Q = np.array([0.,0.,0.])
+            for f in state:
+                Q += weights[f]
+            return np.argmax(Q)
+        # return np.argmax(weights[state])
 
     '''
     - sarsa_update: Graded.
@@ -110,8 +114,18 @@ class sarsaAgent():
     '''
 
     def sarsa_update(self, state, action, reward, new_state, new_action, learning_rate, weights):
-        weights[state, action] += learning_rate*(reward+weights[new_state,new_action]-weights[state, action])
+        Qsa = 0
+        for f in state:
+            Qsa += weights[f, action]
+        Qsa_p = 0
+        for f in new_state:
+            Qsa_p += weights[f, new_action]
+            
+        for f in state:
+            weights[f, action] += learning_rate*(reward+Qsa_p-Qsa)
         return weights
+        # weights[state, action] += learning_rate*(reward+weights[new_state,new_action]-weights[state, action])
+        # return weights
 
     '''
     - train: Ungraded.
