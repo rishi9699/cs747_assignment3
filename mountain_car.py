@@ -35,10 +35,8 @@ class sarsaAgent():
         self.tileside_T1 = 20
         self.learning_rate_T1 = 0.32
         self.learning_rate_T2 = (0.1/ self.numTilings)*3.2
-        self.weights_T1 = np.random.uniform(-0.001, 0, size=((self.tileside_T1 + 1)**2,3))
-        self.weights_T2 = np.random.uniform(-0.001, 0, size=(self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
-        #self.weights_T1 = np.zeros(((self.tileside_T1 + 1)**2,3))
-        #self.weights_T2 = np.zeros((self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
+        self.weights_T1 = np.zeros(((self.tileside_T1 + 1)**2,3))
+        self.weights_T2 = np.zeros((self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
         self.discount = 1.0
         self.train_num_episodes = 10000
         self.test_num_episodes = 100
