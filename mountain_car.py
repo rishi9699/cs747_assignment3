@@ -31,12 +31,12 @@ class sarsaAgent():
         self.env = gym.make('MountainCar-v0')
         self.epsilon_T1 = 0.0
         self.epsilon_T2 = 0.0
-        self.numTilings = 8
-        self.tileside_T1 = 20
+        self.tileside_T1 = 20  #For task-1
+        self.numOfTilings = 8    #For task-2
         self.learning_rate_T1 = 0.32
-        self.learning_rate_T2 = (0.1/ self.numTilings)*3.2
+        self.learning_rate_T2 = 0.04
         self.weights_T1 = np.zeros(((self.tileside_T1 + 1)**2,3))
-        self.weights_T2 = np.zeros((self.numTilings*(self.numTilings+1)*(self.numTilings+1),3))
+        self.weights_T2 = np.zeros((self.numOfTilings*(self.numOfTilings+1)*(self.numOfTilings+1),3))
         self.discount = 1.0
         self.train_num_episodes = 10000
         self.test_num_episodes = 100
@@ -51,10 +51,12 @@ class sarsaAgent():
     '''
 
     def get_table_features(self, obs):
+        # obs_normed store the normalized coordinates of the state (x,v)
         obs_normed = np.array([0., 0.])
         obs_normed[0] = (obs[0] - self.lower_bounds[0])/(self.upper_bounds[0]-self.lower_bounds[0])
         obs_normed[1] = (obs[1] - self.lower_bounds[1])/(self.upper_bounds[1]-self.lower_bounds[1])
         
+        # positions variable stores the tile position corresponding to the normalized state coordinates
         positions = [0, 0]
         positions[0] = int(obs_normed[0] * self.tileside_T1)
         positions[1] = (self.tileside_T1+1)*int(obs_normed[1] * self.tileside_T1)
@@ -69,17 +71,18 @@ class sarsaAgent():
     '''
 
     def get_better_features(self, obs):
+        # obs_normed store the normalized coordinates of the state (x,v)
         obs_normed = np.array([0., 0.])
         obs_normed[0] = (obs[0] - self.lower_bounds[0])/(self.upper_bounds[0]-self.lower_bounds[0])
         obs_normed[1] = (obs[1] - self.lower_bounds[1])/(self.upper_bounds[1]-self.lower_bounds[1])
         
-        positions = np.zeros([self.numTilings, 2])
-        better_features = [0]*self.numTilings
+        better_features = [0]*self.numOfTilings
         
-        for i in range(self.numTilings):
-            positions[i,0] = int(obs_normed[0]*self.numTilings + i/self.numTilings)
-            positions[i,1] = int(obs_normed[1]*self.numTilings + i/self.numTilings)
-            better_features[i] = int(i*((self.numTilings+1)**2) + positions[i,1]*(self.numTilings+1) + positions[i,0])
+        # For every tiling i, position_x and position_v store the the tile position corresponding to the normalized state coordinates 
+        for i in range(self.numOfTilings):
+            position_x = int(obs_normed[0]*self.numOfTilings + i/self.numOfTilings)
+            position_v = int(obs_normed[1]*self.numOfTilings + i/self.numOfTilings)
+            better_features[i] = int(i*((self.numOfTilings+1)**2) + position_v*(self.numOfTilings+1) + position_x)
         
         return better_features
 
@@ -92,11 +95,11 @@ class sarsaAgent():
 
     def choose_action(self, state, weights, epsilon):
         
-        if np.random.binomial(1,epsilon)==1:
+        if np.random.binomial(1,epsilon)==1:  # random action with epsilon probability
             return np.random.choice(3)
         else:
             Q = np.array([0.,0.,0.])
-            for f in state:
+            for f in state:     #calculating Q(s,a) in this loop
                 Q += weights[f]
             
             return np.argmax(Q)
@@ -112,14 +115,14 @@ class sarsaAgent():
     def sarsa_update(self, state, action, reward, new_state, new_action, learning_rate, weights):
         
         Qsa = 0
-        for f in state:
+        for f in state:  #calculating Q(s,a) of state
             Qsa += weights[f, action]
         
         Qsa_p = 0
-        for f in new_state:
+        for f in new_state:   #calculating Q(s,a) of new_state
             Qsa_p += weights[f, new_action]
             
-        for f in state:
+        for f in state:  # sarsa update of weights of all the features corresponding to 'state'
             weights[f, action] += learning_rate*(reward+Qsa_p-Qsa)
         
         return weights
