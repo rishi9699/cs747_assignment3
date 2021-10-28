@@ -123,7 +123,7 @@ class sarsaAgent():
             Qsa_p += weights[f, new_action]
             
         for f in state:  # sarsa update of weights of all the features corresponding to 'state'
-            weights[f, action] += learning_rate*(reward+Qsa_p-Qsa)
+            weights[f, action] += learning_rate*(reward+self.discount*Qsa_p-Qsa)
         
         return weights
 
